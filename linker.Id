@@ -1,21 +1,29 @@
- SECTIONS
-
+SECTIONS
 {
+    /* ... Your existing .text and .data sections ... */
 
-.text.boot : { *(.text.boot) }
+    .rodata : { *(.rodata) }
+    .data : { *(.data) }
 
-.text : { *(.text) }
+    /* Ensure BSS is aligned */
+    . = ALIGN(16);
+    __bss_start = .;
+    .bss : { *(.bss) }
+    __bss_end = .;
 
-.rodata : { *(.rodata) }
+    /* ==============================================
+       DAY 1 ADDITION: 4KB Aligned Page Table Section
+       ============================================== */
+    . = ALIGN(4096);
+    __page_tables_start = .;
+    
+    .pgtbl : {
+        *(.pgtbl)
+    }
+    
+    . = ALIGN(4096);
+    __page_tables_end = .;
 
-.data : { *(.data) }
-
-. = ALIGN(0x8);
-
-bss_begin = .;
-
-.bss : { *(.bss*) }
-
-bss_end = .;
-
-} 
+    /* End of the kernel image space */
+    _end = .;
+}

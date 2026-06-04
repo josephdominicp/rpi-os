@@ -1,9 +1,11 @@
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef _TIMER_H
+#define _TIMER_H
 
-/*
- * Initialize system timer to generate periodic interrupts
- */
+#include <stdint.h>
+
+extern volatile uint64_t system_ticks;
+
 void timer_init(void);
+void handle_timer_irq(void);
 
-#endif /* TIMER_H */
+#endif

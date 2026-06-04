@@ -1,52 +1,50 @@
-ARMGNU ?= aarch64-linux-gnu
+# Target binary name
+TARGET = kernel8
 
-
-COPS = -Wall -nostdlib -nostartfiles -ffreestanding -Iinclude -mgeneral-regs-only
-
-ASMOPS = -Iinclude
-
-
-BUILD_DIR = build
-
+# Directories
 SRC_DIR = src
+INC_DIR = include
 
+# ====================================================================
+# DAY 1 ADDITION: Include subdirectories for MMU, Arch, and Scheduler
+# ====================================================================
+# Find all C files recursively in subdirectories
+C_SRCS = $(wildcard $(SRC_DIR)/*.c) \
+         $(wildcard $(SRC_DIR)/mm/*.c) \
+         $(wildcard $(SRC_DIR)/kernel/*.c) \
+         $(wildcard $(SRC_DIR)/drivers/*.c)
 
-all : kernel8.img
+# Find all Assembly files recursively in subdirectories
+S_SRCS = $(wildcard $(SRC_DIR)/*.S) \
+         $(wildcard $(SRC_DIR)/boot/*.S) \
+         $(wildcard $(SRC_DIR)/arch/*.S)
 
+# Combine object files
+OBJS = $(C_SRCS:.c=.o) $(S_SRCS:.S=.o)
 
-clean :
+# Compiler and Linker Flags
+# Add -I flags so the compiler can locate headers across your tree
+CFLAGS = -Wall -O2 -ffreestanding -nostdinc -nostdlib -nostartfiles \
+         -I$(INC_DIR) \
+         -I$(INC_DIR)/arch \
+         -I$(INC_DIR)/kernel \
+         -I$(INC_DIR)/mm \
+         -I$(INC_DIR)/drivers
 
-rm -rf $(BUILD_DIR) *.img
+# Build rules
+all: $(TARGET).img
 
+$(TARGET).elf: $(OBJS)
+	aarch64-none-elf-ld -T linker.ld -o $(TARGET).elf $(OBJS)
 
-$(BUILD_DIR)/%_c.o: $(SRC_DIR)/%.c
+$(TARGET).img: $(TARGET).elf
+	aarch64-none-elf-objcopy $(TARGET).elf -O binary $(TARGET).img
 
-mkdir -p $(@D)
+%.o: %.c
+	aarch64-none-elf-gcc $(CFLAGS) -c $< -o $@
 
-$(ARMGNU)-gcc $(COPS) -MMD -c $< -o $@
+%.o: %.S
+	aarch64-none-elf-gcc $(CFLAGS) -c $< -o $@
 
-
-$(BUILD_DIR)/%_s.o: $(SRC_DIR)/%.S
-
-$(ARMGNU)-gcc $(ASMOPS) -MMD -c $< -o $@
-
-
-C_FILES = $(wildcard $(SRC_DIR)/*.c)
-
-ASM_FILES = $(wildcard $(SRC_DIR)/*.S)
-
-OBJ_FILES = $(C_FILES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%_c.o)
-
-OBJ_FILES += $(ASM_FILES:$(SRC_DIR)/%.S=$(BUILD_DIR)/%_s.o)
-
-
-DEP_FILES = $(OBJ_FILES:%.o=%.d)
-
--include $(DEP_FILES)
-
-
-kernel8.img: $(SRC_DIR)/linker.ld $(OBJ_FILES)
-
-$(ARMGNU)-ld -T $(SRC_DIR)/linker.ld -o $(BUILD_DIR)/kernel8.elf $(OBJ_FILES)
-
-$(ARMGNU)-objcopy $(BUILD_DIR)/kernel8.elf -O binary kernel8.img 
+clean:
+	rm -f $(OBJS) $(TARGET).elf $(TARGET).img

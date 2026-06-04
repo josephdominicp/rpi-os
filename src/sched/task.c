@@ -1,58 +1,62 @@
 #include "task.h"
 
-/* Maximum number of tasks */
-#define MAX_TASKS 4
+#define MAX_TASKS   16
+#define STACK_SIZE  4096  // Each task gets an isolated 4KB private stack
 
-/* Task table */
-static task_t tasks[MAX_TASKS];
+// Allocate task data structures and memory stacks statically
+struct task_struct task_pool[MAX_TASKS];
+static uint8_t task_stacks[MAX_TASKS][STACK_SIZE] __attribute__((aligned(16)));
 
-/* Index of current task */
-static uint32_t current_task = 0;
+int64_t nr_tasks = 0;
+struct task_struct* current_task; // Global tracking pointer to the active thread
 
-/*
- * Initialize task system
- */
-void task_init(void)
-{
-    for (uint32_t i = 0; i < MAX_TASKS; i++) {
-        tasks[i].state = TASK_BLOCKED;
-        tasks[i].pid   = i;
+// --- INITIALIZE TASK 0 (The Boot Thread) ---
+// This registers the main loop currently executing boot.S/kernel_main as Task 0
+// so that the scheduler has an outgoing structure to save states into later.
+void task_init(void) {
+    task_pool[0].id = 0;
+    task_pool[0].state = TASK_RUNNING;
+    task_pool[0].priority = 1;
+    task_pool[0].counter = 10;
+    
+    current_task = &task_pool[0];
+    nr_tasks = 1;
+}
+
+// --- CREATE A NEW THREAD TASK ---
+int64_t task_create(void (*entry_point)(void), int64_t priority) {
+    if (nr_tasks >= MAX_TASKS) {
+        return -1; // Out of available processing slots
     }
-}
 
-/*
- * Create a new task
- * entry : function where task starts
- * stack : top of allocated stack memory
- */
-task_t *task_create(void (*entry)(void), uint32_t *stack, uint32_t pid)
-{
-    task_t *t = &tasks[pid];
+    int64_t id = nr_tasks++;
+    struct task_struct* p = &task_pool[id];
 
-    /*
-     * ARM stack frame (simplified)
-     * ----------------------------
-     * r0-r12
-     * lr
-     * pc   ← entry point
-     * cpsr
-     */
+    p->id = id;
+    p->state = TASK_READY;
+    p->priority = priority;
+    p->counter = priority * 10; // Give a raw processing time allocation
 
-    stack -= 16;               /* Reserve space for registers */
-    stack[15] = (uint32_t)entry;  /* PC */
+    // Clear general callee-saved registers to ensure a clean slate
+    p->cpu_context.x19 = 0; p->cpu_context.x20 = 0; p->cpu_context.x21 = 0;
+    p->cpu_context.x22 = 0; p->cpu_context.x23 = 0; p->cpu_context.x24 = 0;
+    p->cpu_context.x25 = 0; p->cpu_context.x26 = 0; p->cpu_context.x27 = 0;
+    p->cpu_context.x28 = 0;
+    p->cpu_context.fp = 0;  // Reset Frame Pointer
 
-    t->stack_ptr  = stack;
-    t->stack_base = (uint32_t)stack;
-    t->state      = TASK_READY;
-    t->pid        = pid;
+    // ====================================================================
+    // CORE CRITICAL SURGERY: Faking the Execution Context
+    // ====================================================================
 
-    return t;
-}
+    // 1. Set the Link Register (lr) to our function target. 
+    // When cpu_switch_to finishes loading this context and runs 'ret', 
+    // the CPU will jump directly to this address.
+    p->cpu_context.lr = (uint64_t)entry_point;
 
-/*
- * Get currently running task
- */
-task_t *task_current(void)
-{
-    return &tasks[current_task];
+    // 2. Set the Stack Pointer (sp) to the TOP of our private 4KB block.
+    // On ARMv8-A, stacks grow DOWNWARD in memory, meaning our pointer must
+    // start at the highest address element boundary!
+    p->cpu_context.sp = (uint64_t)&task_stacks[id][STACK_SIZE];
+
+    return id;
 }

@@ -67,4 +67,31 @@
 #define ENABLE_IRQS_1           (IRQ_BASE + 0x210)
 #define DISABLE_IRQS_1          (IRQ_BASE + 0x21C)
 
+// Ensure these sit inside your arm_regs.h file
+#define MAIR_DEVICE_nGnRnE 0b00000000
+#define MAIR_NORMAL_WB_WA  0b11111111
+#define MAIR_VALUE         ((MAIR_DEVICE_nGnRnE << 0) | (MAIR_NORMAL_WB_WA << 8))
+
+#define TCR_T0SZ    (16 << 0)
+#define TCR_T1SZ    (16 << 16)
+#define TCR_IRGN0   (1 << 8)
+#define TCR_ORGN0   (1 << 10)
+#define TCR_SH0     (3 << 12)
+#define TCR_TG0     (0 << 14)
+#define TCR_IRGN1   (1 << 24)
+#define TCR_ORGN1   (1 << 26)
+#define TCR_SH1     (3 << 28)
+#define TCR_TG1     (2 << 30)
+#define TCR_IPS     (4ULL << 32)
+
+#define TCR_VALUE   (TCR_T0SZ | TCR_T1SZ | TCR_IRGN0 | TCR_ORGN0 | TCR_SH0 | TCR_TG0 | TCR_IRGN1 | TCR_ORGN1 | TCR_SH1 | TCR_TG1 | TCR_IPS)
+// ====================================================================
+// DAY 5 ADDITIONS: SCTLR_EL1 Master Control Switches
+// ====================================================================
+#define SCTLR_MMU_ENABLE        (1 << 0)  // Bit 0: Turns on the MMU
+#define SCTLR_DATA_CACHE        (1 << 2)  // Bit 2: Turns on the D-Cache (Fast RAM reads)
+#define SCTLR_INST_CACHE        (1 << 12) // Bit 12: Turns on the I-Cache (Fast code execution)
+
+#define SCTLR_ENABLE_FLAGS      (SCTLR_MMU_ENABLE | SCTLR_DATA_CACHE | SCTLR_INST_CACHE)
+
 #endif /* ARM_REGS_H */
