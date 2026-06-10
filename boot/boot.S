@@ -1,4 +1,4 @@
-#include "arch/arm_regs.h"
+#include "arm_regs.h"
 
 .section ".text.boot"
 .global _start
@@ -13,12 +13,19 @@ proc_hang:
     b       proc_hang
 
 master_init:
-    // 1. [Your existing code to clear BSS goes here]
-    // Make sure your BSS clear loop finishes before moving forward!
+    // 1. Clear the BSS section to zero
+    ldr     x0, =__bss_start
+    ldr     x1, =__bss_end
+bss_loop:
+    cmp     x0, x1
+    b.hs    bss_done
+    str     xzr, [x0], #8
+    b       bss_loop
+bss_done:
 
     // 2. Set up the Stack Pointer immediately
     // C functions require a valid stack space to execute safely!
-    ldr     x0, =_end
+    mov     x0, #0x80000
     mov     sp, x0
 
     // 3. Configure Memory Attributes and Control rules (From Day 2)

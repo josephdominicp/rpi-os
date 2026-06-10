@@ -7,21 +7,28 @@
  */
 
 svc_handler:
-    /* Save context (minimal) */
-    push {r0-r3, r12, lr}
+    // Save registers x0-x8 and lr (x30)
+    sub     sp, sp, #96
+    stp     x0, x1, [sp, #0]
+    stp     x2, x3, [sp, #16]
+    stp     x4, x5, [sp, #32]
+    stp     x6, x7, [sp, #48]
+    str     x8, [sp, #64]
+    str     x30, [sp, #80]
 
-    /*
-     * Extract syscall number
-     * SVC instruction is at (LR - 4)
-     */
-    ldr r0, [lr, #-4]
-    bic r0, r0, #0xFF000000   /* isolate immediate value */
+    // In AArch64, the syscall number is passed in x8
+    // We pass it to syscall_dispatch as the first argument (x0)
+    mov     x0, x8
+    bl      syscall_dispatch
 
-    /* Call C syscall dispatcher */
-    bl syscall_dispatch
+    // Restore registers
+    ldp     x0, x1, [sp, #0]
+    ldp     x2, x3, [sp, #16]
+    ldp     x4, x5, [sp, #32]
+    ldp     x6, x7, [sp, #48]
+    ldr     x8, [sp, #64]
+    ldr     x30, [sp, #80]
+    add     sp, sp, #96
 
-    /* Restore context */
-    pop {r0-r3, r12, lr}
-
-    /* Return from exception */
-    subs pc, lr, #4
+    // Return from exception
+    eret

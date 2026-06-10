@@ -26,9 +26,9 @@ void mmu_init(void) {
     // Slot 0 handles addresses from 0 to 1GB
     l2_table[0] = ((uint64_t)l3_ram_table) | MM_TYPE_PAGE_TABLE;
     
-    // On the RPi 4, 0xFE000000 falls into the 3rd GiB block of memory.
-    // Index 3 of the L2 table handles the address range 0xC0000000 to 0xFFFFFFFF.
-    l2_table[3] = ((uint64_t)l3_dev_table) | MM_TYPE_PAGE_TABLE;
+    // On the RPi 3, the peripheral region containing GPIO and Mini UART starts at 0x3F200000.
+    // Index 505 of the L2 table handles the 2MB address range 0x3F200000 to 0x3F3FFFFF.
+    l2_table[505] = ((uint64_t)l3_dev_table) | MM_TYPE_PAGE_TABLE;
 
     // 4. Populate the RAM L3 Table (Maps 0x0 to 2MB)
     uint64_t ram_address = 0;
@@ -37,9 +37,9 @@ void mmu_init(void) {
         ram_address += PAGE_SIZE;
     }
 
-    // 5. Populate the Peripheral L3 Table (Maps 0xFE000000 to 0xFE200000)
-    // This perfectly covers the PL011 UART registers located at 0xFE201000!
-    uint64_t dev_address = 0xFE000000;
+    // 5. Populate the Peripheral L3 Table (Maps 0x3F200000 to 0x3F400000)
+    // This perfectly covers GPIO and Mini UART (AUX) registers.
+    uint64_t dev_address = 0x3F200000;
     for (i = 0; i < PTRS_PER_TABLE; i++) {
         l3_dev_table[i] = dev_address | MMU_FLAGS_DEVICE;
         dev_address += PAGE_SIZE;

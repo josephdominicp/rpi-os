@@ -25,10 +25,11 @@ void syscall_dispatch(uint32_t syscall_num)
 void sys_write(const char *str)
 {
     asm volatile(
-        "mov r1, %0\n"
+        "mov x0, %0\n"
+        "mov x8, #0\n"
         "svc #0\n"
         :
         : "r"(str)
-        : "r1"
+        : "x0", "x8"
     );
 }

@@ -48,15 +48,21 @@ int64_t task_create(void (*entry_point)(void), int64_t priority) {
     // CORE CRITICAL SURGERY: Faking the Execution Context
     // ====================================================================
 
-    // 1. Set the Link Register (lr) to our function target. 
-    // When cpu_switch_to finishes loading this context and runs 'ret', 
-    // the CPU will jump directly to this address.
-    p->cpu_context.lr = (uint64_t)entry_point;
+    extern void ret_from_fork(void);
 
-    // 2. Set the Stack Pointer (sp) to the TOP of our private 4KB block.
-    // On ARMv8-A, stacks grow DOWNWARD in memory, meaning our pointer must
-    // start at the highest address element boundary!
-    p->cpu_context.sp = (uint64_t)&task_stacks[id][STACK_SIZE];
+    // 1. Set the Link Register (lr) to ret_from_fork. 
+    // When cpu_switch_to finishes loading this context and runs 'ret', 
+    // the CPU will jump directly to ret_from_fork.
+    p->cpu_context.lr = (uint64_t)ret_from_fork;
+
+    // 2. Set ELR_EL1 and SPSR_EL1 so ret_from_fork's eret returns to entry_point
+    // with interrupts enabled (EL1h mode = 0x5).
+    p->cpu_context.elr_el1 = (uint64_t)entry_point;
+    p->cpu_context.spsr_el1 = 0x5;
+
+    // 3. Set the Stack Pointer (sp) to the top of our private block minus
+    // the 128-byte space we reserved for the initial faked exception frame.
+    p->cpu_context.sp = (uint64_t)&task_stacks[id][STACK_SIZE] - 128;
 
     return id;
 }

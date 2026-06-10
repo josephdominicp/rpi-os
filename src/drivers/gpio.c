@@ -1,15 +1,6 @@
 #include "gpio.h"
 #include "arm_regs.h"
-
-static inline void mmio_write(unsigned int reg, unsigned int data)
-{
-    *(volatile unsigned int *)reg = data;
-}
-
-static inline unsigned int mmio_read(unsigned int reg)
-{
-    return *(volatile unsigned int *)reg;
-}
+#include "utils.h"
 
 void gpio_init_uart(void)
 {

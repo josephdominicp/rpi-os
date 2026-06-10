@@ -8,12 +8,12 @@ static uint32_t tick = 0;
 
 void irq_enable(void)
 {
-    asm volatile("cpsie i");
+    asm volatile("msr daifclr, #2");
 }
 
 void irq_disable(void)
 {
-    asm volatile("cpsid i");
+    asm volatile("msr daifset, #2");
 }
 
 void irq_init(void)

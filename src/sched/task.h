@@ -24,6 +24,8 @@ struct cpu_context {
     uint64_t fp;  // Frame Pointer (x29)
     uint64_t lr;  // Link Register (x30) - Where the task resumes executing
     uint64_t sp;  // Stack Pointer - This task's private memory stack line
+    uint64_t elr_el1;
+    uint64_t spsr_el1;
 };
 
 // --- STEP 2: Define the Task Control Block (TCB) ---

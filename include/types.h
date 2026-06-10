@@ -21,20 +21,14 @@ typedef signed long long    int64_t;
 /*
  * Architecture-sized types
  */
-typedef uint32_t            size_t;
-typedef int32_t             ssize_t;
+typedef uint64_t            size_t;
+typedef int64_t             ssize_t;
 
-/*
- * Boolean type
- */
-typedef enum {
-    false = 0,
-    true  = 1
-} bool;
+
 
 /*
  * Pointer-sized integer
  */
-typedef uint32_t            uintptr_t;
+typedef uint64_t            uintptr_t;
 
 #endif /* TYPES_H */

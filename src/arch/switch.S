@@ -25,6 +25,11 @@ cpu_switch_to:
     mov     x9, sp
     str     x9, [x0, #96]
 
+    // Save ELR_EL1 and SPSR_EL1
+    mrs     x9, elr_el1
+    mrs     x10, spsr_el1
+    stp     x9, x10, [x0, #104]
+
     // ----------------------------------------------------------------
     // 2. LOAD INCOMING CPU STATE (next)
     // ----------------------------------------------------------------
@@ -39,6 +44,11 @@ cpu_switch_to:
     // Restore the incoming Stack Pointer
     ldr     x9, [x1, #96]
     mov     sp, x9
+
+    // Restore ELR_EL1 and SPSR_EL1
+    ldp     x9, x10, [x1, #104]
+    msr     elr_el1, x9
+    msr     spsr_el1, x10
 
     // ----------------------------------------------------------------
     // 3. SWITCH EXECUTION PATH

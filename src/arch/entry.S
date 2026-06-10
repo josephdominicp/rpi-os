@@ -72,3 +72,19 @@ irq_handler_el1:
 
 default_handler:
     b       default_handler         // Catch-all loop for unexpected errors
+
+.global ret_from_fork
+ret_from_fork:
+    // We just returned from cpu_switch_to.
+    // The stack pointer points to the 128-byte interrupt frame.
+    // We restore caller-saved registers and eret!
+    ldp     x0, x1, [sp, #0]
+    ldp     x2, x3, [sp, #16]
+    ldp     x4, x5, [sp, #32]
+    ldp     x6, x7, [sp, #48]
+    ldp     x8, x9, [sp, #64]
+    ldp     x10, x11, [sp, #80]
+    ldp     x12, x13, [sp, #96]
+    ldr     x30, [sp, #112]
+    add     sp, sp, #128
+    eret
